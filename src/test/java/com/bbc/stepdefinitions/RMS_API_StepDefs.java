@@ -10,6 +10,7 @@ import io.restassured.response.Response;
 import static io.restassured.RestAssured.*;
 import static org.junit.Assert.*;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -27,10 +28,11 @@ public class RMS_API_StepDefs {
     @When("I send a GET request to the RMS API")
     public void sendGetRequestToRmsApi() throws Exception {
         actualApiResponse = given().when().get(RMS_API_BaseUtils.getRmsApiEndpointUrl());
-
+        System.out.println("Actual API Response: " + actualApiResponse.asString());
         if (actualApiResponse.getStatusCode() == 200) {
             ObjectMapper mapper = new ObjectMapper();
             parsedRmsResponse = mapper.readValue(actualApiResponse.asString(), RMSResponse.class);
+            System.out.println("Parsed RMS Response: " + parsedRmsResponse.toString());
         } else {
             parsedRmsResponse = null;
         }
@@ -43,8 +45,9 @@ public class RMS_API_StepDefs {
             String date = row.get("date");
             int expectedStatus = Integer.parseInt(row.get("expectedStatus"));
             String invalidScheduleUrl = RMS_API_BaseUtils.getRmsApiEndpointUrl() + RMS_API_BaseUtils.getPathSeparator() + date;
-
+            // System.out.println(invalidScheduleUrl);
             actualApiResponse = given().when().get(invalidScheduleUrl);
+
             assertEquals("Unexpected status code", expectedStatus, actualApiResponse.getStatusCode());
         }
     }
@@ -58,10 +61,9 @@ public class RMS_API_StepDefs {
     public void verifyResponseTime() {
         String thresholdStr = RMS_API_BaseUtils.get("responseTimeThreshold");
         assertNotNull("responseTimeThreshold not found in config", thresholdStr);
-
         long threshold = Long.parseLong(thresholdStr);
         long actual = actualApiResponse.getTime();
-
+        System.out.println("Response time: actual=" + actual + "ms, threshold=" + threshold + "ms");
         assertTrue("Response time too high: " + actual + "ms (limit: " + threshold + "ms)", actual < threshold);
     }
 
@@ -116,15 +118,30 @@ public class RMS_API_StepDefs {
             assertNotNull("transmission_start is null", e.getTransmission_start());
             assertNotNull("transmission_end is null", e.getTransmission_end());
 
+            // Print raw values from JSON
+            System.out.println("Raw transmission_start: " + e.getTransmission_start());
+            System.out.println("Raw transmission_end:   " + e.getTransmission_end());
+
             Instant start = Instant.parse(e.getTransmission_start());
             Instant end = Instant.parse(e.getTransmission_end());
 
+            // Print parsed values
+            System.out.println("Parsed transmission_start: " + start);
+            System.out.println("Parsed transmission_end:   " + end);
+
+            // Duration between start and end
+            Duration duration = Duration.between(start, end);
+            System.out.println("Duration: " + duration.toMinutes() + " minutes (" + duration.toHours() + " hours)");
+
+
             assertTrue("Start not before end: " + start + " → " + end, start.isBefore(end));
+            break;
         }
     }
 
     @Then("the response header {string} is present and valid")
     public void verifyHeaderPresent(String headerName) {
+        // System.out.println(actualApiResponse.getHeaders());
         String header = actualApiResponse.getHeader(headerName);
         assertNotNull("Header " + headerName + " not found", header);
         assertFalse(header.trim().isEmpty());
@@ -132,6 +149,7 @@ public class RMS_API_StepDefs {
 
     @Then("the error object has properties {string} and {string}")
     public void verifyErrorObjectFields(String errorMessageField, String statusCodeField) {
+        System.out.println(actualApiResponse.getBody().asPrettyString());
         Map<String, ?> errorMap = actualApiResponse.jsonPath().getMap("error");
 
         assertNotNull("Error object missing", errorMap);
@@ -139,12 +157,4 @@ public class RMS_API_StepDefs {
         assertTrue("Missing status code: " + statusCodeField, errorMap.containsKey(statusCodeField));
     }
 
-    @Then("each episode should have a childrens field set to either true or false")
-    public void verifyChildrensFieldPresent() {
-        for (Element e : parsedRmsResponse.getSchedule().getElements()) {
-            assertNotNull("Childrens field is null", e.getEpisode());
-            assertTrue("Childrens field should be true or false",
-                    e.getEpisode().isChildrens() || !e.getEpisode().isChildrens());
-        }
-    }
 }

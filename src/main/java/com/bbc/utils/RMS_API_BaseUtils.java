@@ -32,6 +32,6 @@ public class RMS_API_BaseUtils {
 
     // Helper method to return combined RMS base + endpoint URL
     public static String getRmsApiEndpointUrl() {
-        return get("baseApiUrl") + get("ibltestEndpoint");
+        return get("baseApiUrl");
     }
 }

@@ -13,12 +13,14 @@ public class RMS_API_Hooks {
         String baseUrl = RMS_API_BaseUtils.get("baseApiUrl");
         if (baseUrl != null && !baseUrl.isEmpty()) {
             RestAssured.baseURI = baseUrl;
+            System.out.println("Setup: baseURI set to " + RestAssured.baseURI);
         }
     }
 
     // Teardown method to reset RestAssured after each scenario
     @After
     public void teardown() {
+        System.out.println("Teardown: Resetting RestAssured");
         RestAssured.reset();
     }
 }

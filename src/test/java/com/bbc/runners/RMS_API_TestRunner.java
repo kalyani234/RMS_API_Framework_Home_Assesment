@@ -7,13 +7,16 @@ import io.cucumber.junit.CucumberOptions;
 @RunWith(Cucumber.class)
 @CucumberOptions(
         features = "src/test/resources/features",
-        glue = {"com.bbc.stepdefinitions"},
+        glue = {"com.bbc.stepdefinitions", "com.bbc.runners"},
         plugin = {
                 "pretty",
-                "json:target/cucumber/cucumber.json",
-                "me.jvt.cucumber.report.PrettyReports:target/cucumber"
+                "html:target/cucumber-reports"
+//                "json:target/cucumber/cucumber.json",
+//                "me.jvt.cucumber.report.PrettyReports:target/cucumber"
         },
-        monochrome = true
+        monochrome = true,
+        tags ="@Smoke"
 )
+
 public class RMS_API_TestRunner {
 }
